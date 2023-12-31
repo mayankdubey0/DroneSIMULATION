@@ -9,9 +9,10 @@ classdef Drone_Controller < handle
         derivative
         system_function
         transfer_function
-        symbols, angle
+        symbols, angles
         motor_speeds
         accel_reading, gyro_reading
+        thrusts
 
     end
     
@@ -25,13 +26,14 @@ classdef Drone_Controller < handle
             obj.derivative = 0;
             obj.motor_speeds  = [1100; 1050; -900; -900];
 
+            obj.thrusts = thrust_cons * air_density * (diameter^4) * [obj.motor_speeds(1)^2; obj.motor_speeds(2)^2; obj.motor_speeds(3)^2; obj.motor_speeds(4)^2];
+            
+
             obj.symbols = sym('t s');
-            obj.angle = motor_speeds*t;
-            obj.system_funtion = [drone.Ixc * ]
+            obj.system_function = [(drone.gravity + sum(obj.thrusts))* drone.total_mass = ];
             
 
         end
     end
 
 end
-
