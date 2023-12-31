@@ -60,7 +60,7 @@ classdef Drone < handle
             air_density = 1.225;    % kg/m^3
             diameter = 0.1;
             
-            obj.motor_speeds = [1100; 1050; -900; -900];
+            obj.motor_speeds = [1000; 1000; -1000; -1000] + (randn(4,1))*15;
             obj.prev_motor_speeds = [0; 0; 0; 0];
              
             obj.motor_Icz = (1/3) * (0.01 + 0.25*obj.motor_mass) * diameter^2/4;
@@ -82,8 +82,8 @@ classdef Drone < handle
     
         % #### MAIN FUNCTIONS FOR CONTROLLER ####
         function obj = set_motor_speed(obj, motor, speed)
-            obj.prev_motor_speeds = obj.motor_speeds + (randn)*15; % adding actuator noise (gaussian distribution with mean 
-            obj.motor_speeds(motor) = speed;
+            obj.prev_motor_speeds = obj.motor_speeds; % adding actuator noise (gaussian distribution with mean 
+            obj.motor_speeds(motor) = speed + (randn)*15;
             obj.thrusts = thrust_cons * air_density * (diameter^4) * [obj.motor_speeds(1)^2; obj.motor_speeds(2)^2; obj.motor_speeds(3)^2; obj.motor_speeds(4)^2];
         end
         
@@ -202,7 +202,7 @@ classdef Drone < handle
 
             axis([-10, 10, -10, 10, 0, 100]);
 
-            numSteps = 100;
+            numSteps = 50;
 
             % Animation loop
             for step = 1:numSteps
