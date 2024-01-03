@@ -2,36 +2,67 @@
 classdef Drone_Controller < handle
     properties
         drone
-        target
-        error
-        proportional
-        integral
-        derivative
-        system_function
-        transfer_function
-        symbols, angles
+        target, error
+        derivative, derivative_gain
+        A, B, C, D, sys_c 
+        Ad, Bd, time_step, sys_d
+        symbols
+        position, angles
         motor_speeds
         accel_reading, gyro_reading
-        thrusts
+        thrusts, X, X_dot
+        gravity
 
     end
     
     methods
         function obj = Drone_Controller()
             obj.drone = Drone();
-            obj.target = 0;
-            obj.error = 0;
-            obj.proportional = 0;
-            obj.integral = 0;
-            obj.derivative = 0;
+            obj.target = [[0;0;0], [0;0;0]]; % [[x; y; z], [roll; pitch; yaw]]
+            obj.error = zeros(3, 2);
+            
             obj.motor_speeds  = [1100; 1050; -900; -900];
 
+            thrust_cons = 0.008;
+            air_density = 1.225;
+            diameter = 0.1;
             obj.thrusts = thrust_cons * air_density * (diameter^4) * [obj.motor_speeds(1)^2; obj.motor_speeds(2)^2; obj.motor_speeds(3)^2; obj.motor_speeds(4)^2];
-            
+            obj.X = zeros(6, 1);
+            obj.X_dot = zeros(6, 1);
+            obj.gravity = [0; 0; -9.81];
 
-            obj.symbols = sym('t s');
-            obj.system_function = [(drone.gravity + sum(obj.thrusts))* drone.total_mass = ];
+            obj.A = [0 0 0 1 0 0;
+                     0 0 0 0 1 0;
+                     0 0 0 0 0 1;
+                     0 0 0 0 0 0;
+                     0 0 0 0 0 0;
+                     0 0 0 0 0 0];
+            obj.B = [0 0 0 0;
+                     0 0 0 0;
+                     0 0 0 0;
+                     0.5/obj.drone.Icx -0.5/obj.drone.Icx 0 0;
+                     0 0 -0.5/obj.drone.Icy 0.5/obj.drone.Icy;
+                     -0.01/obj.drone.Icz -0.01/obj.drone.Icz 0.01/obj.drone.Icz 0.01/obj.drone.Icz];
+            obj.C = [1 0 0 0 0 0;
+                     0 1 0 0 0 0;
+                     0 0 1 0 0 0;];
+            obj.D = [0 0 0 0;
+                     0 0 0 0;
+                     0 0 0 0];
             
+            obj.sys_c = ss(obj.A, obj.B, obj.C, obj.D);
+            obj.time_step = 0.1;
+            obj.sys_d = c2d(obj.sys_c, obj.time_step);
+
+            obj.Ad = obj.sys_d.A;
+            obj.Bd = obj.sys_d.B;
+
+            %disp(obj.Ad);
+            %disp(" ");
+            %disp(obj.Bd);
+            
+            x = obj.A * obj.X + obj.B * obj.thrusts;
+            disp(x);
 
         end
     end
