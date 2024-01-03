@@ -13,6 +13,7 @@ classdef Drone < handle
         w_roll, w_pitch, w_yaw
         motor_speeds, prev_motor_speeds
         accelerometer_bias, gyro_bias
+        total_mass
     end 
 
     methods
@@ -64,6 +65,7 @@ classdef Drone < handle
             obj.prev_motor_speeds = [0; 0; 0; 0];
              
             obj.motor_Icz = (1/3) * (0.01 + 0.25*obj.motor_mass) * diameter^2/4;
+            obj.total_mass = obj.motor_mass * 4 + obj.center_mass;
             
             
             obj.thrusts = thrust_cons * air_density * (diameter^4) * [obj.motor_speeds(1)^2; obj.motor_speeds(2)^2; obj.motor_speeds(3)^2; obj.motor_speeds(4)^2];
@@ -117,10 +119,10 @@ classdef Drone < handle
             accel_translational = obj.net_forces/(obj.center_mass + obj.motor_mass*4);
 
             %find rotational acceleration
-            obj.net_moments(:, 1) = (cross(obj.m3 - obj.com, obj.thrusts(3)*normal') + cross(obj.m4 - obj.com, obj.thrusts(4)*normal'));
-            obj.net_moments(:, 2) = (cross(obj.m1 - obj.com, obj.thrusts(1)*normal') + cross(obj.m2 - obj.com, obj.thrusts(2)*normal'));
+            obj.net_moments(:, 1) = (cross(obj.m1 - obj.com, obj.thrusts(1)*normal') + cross(obj.m2 - obj.com, obj.thrusts(2)*normal'));
+            obj.net_moments(:, 2) = (cross(obj.m3 - obj.com, obj.thrusts(3)*normal') + cross(obj.m4 - obj.com, obj.thrusts(4)*normal'));
             
-            obj.net_moments(:, 3) = -obj.motor_Icz*ones(1,4)*(obj.motor_speeds - obj.prev_motor_speeds)/0.1 * normal;
+            obj.net_moments(:, 3) = -sum(obj.motor_Icz*(obj.motor_speeds - obj.prev_motor_speeds))/0.1*normal - sum(0.01*obj.thrusts)*normal;
             obj.prev_motor_speeds = obj.motor_speeds;
             % obj.net_moments(:, 3) = ones(1, 4) * (obj.motor_speeds * obj.motor_Icz) * normal;
             % disp(obj.net_moments(:, 3));
@@ -200,7 +202,7 @@ classdef Drone < handle
  
             grid on;
 
-            axis([-10, 10, -10, 10, 0, 100]);
+            axis([-10, 10, -10, 10, -10, 10]);
 
             numSteps = 50;
 
