@@ -5,6 +5,7 @@ classdef Drone_Controller < handle
         target, error
         derivative, derivative_gain
         A, B, C, D, sys_c 
+        Q, R, P
         Ad, Bd, time_step, sys_d
         symbols
         position, angles
@@ -21,7 +22,7 @@ classdef Drone_Controller < handle
             obj.target = [[0;0;0], [0;0;0]]; % [[x; y; z], [roll; pitch; yaw]]
             obj.error = zeros(3, 2);
             
-            obj.motor_speeds  = [1100; 1050; -900; -900];
+            obj.motor_speeds  = [1000; 1000; -900; -900];
 
             thrust_cons = 0.008;
             air_density = 1.225;
@@ -31,24 +32,23 @@ classdef Drone_Controller < handle
             obj.X_dot = zeros(6, 1);
             obj.gravity = [0; 0; -9.81];
 
-            obj.A = [0 0 0 1 0 0;
-                     0 0 0 0 1 0;
-                     0 0 0 0 0 1;
-                     0 0 0 0 0 0;
-                     0 0 0 0 0 0;
-                     0 0 0 0 0 0];
-            obj.B = [0 0 0 0;
-                     0 0 0 0;
-                     0 0 0 0;
-                     0.5/obj.drone.Icx -0.5/obj.drone.Icx 0 0;
-                     0 0 -0.5/obj.drone.Icy 0.5/obj.drone.Icy;
-                     -0.01/obj.drone.Icz -0.01/obj.drone.Icz 0.01/obj.drone.Icz 0.01/obj.drone.Icz];
+            obj.A = zeros(6, 6);
+            obj.A(1:3, 4:6) = eye(3, 3);
+            
+            obj.B = zeros(6, 4);
+            obj.B(4:6, 1:4) = [0, 0, -0.5/obj.drone.Icy, 0.5/obj.drone.Icy;
+                               0.5/obj.drone.Icx, -0.5/obj.drone.Icx, 0, 0; ...
+                               0.01, 0.01, -0.01, -0.01];
+
             obj.C = [1 0 0 0 0 0;
                      0 1 0 0 0 0;
                      0 0 1 0 0 0;];
             obj.D = [0 0 0 0;
                      0 0 0 0;
                      0 0 0 0];
+            obj.Q = obj.C'*obj.C;
+            obj.R = eye(4, 4);
+            obj.P = dare(obj.A', obj.B, obj.Q, obj.R);
             
             obj.sys_c = ss(obj.A, obj.B, obj.C, obj.D);
             obj.time_step = 0.1;
@@ -57,12 +57,12 @@ classdef Drone_Controller < handle
             obj.Ad = obj.sys_d.A;
             obj.Bd = obj.sys_d.B;
 
-            %disp(obj.Ad);
-            %disp(" ");
-            %disp(obj.Bd);
+            disp(obj.A);
+            disp(" ");
+            disp(obj.B);
             
-            x = obj.A * obj.X + obj.B * obj.thrusts;
-            disp(x);
+            obj.X = obj.A * obj.X + obj.B * obj.thrusts;
+            disp(obj.X);
 
         end
     end
