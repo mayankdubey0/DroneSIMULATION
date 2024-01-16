@@ -5,7 +5,7 @@ classdef Drone_Controller < handle
         target, error
         derivative, derivative_gain
         A, B, C, D, sys_c 
-        Q, R, P
+        Q, R, P, K
         Ad, Bd, time_step, sys_d
         symbols
         position, angles
@@ -19,10 +19,10 @@ classdef Drone_Controller < handle
     methods
         function obj = Drone_Controller()
             obj.drone = Drone();
-            obj.target = [[0;0;0], [0;0;0]]; % [[x; y; z], [roll; pitch; yaw]]
-            obj.error = zeros(3, 2);
+            obj.target = [0;0;0;0;0;0]; % [x; y; z; roll; pitch; yaw]
+            obj.error = zeros(6, 1);
             
-            obj.motor_speeds  = [1000; 1000; -900; -900];
+            obj.motor_speeds  = [900; 900; -900; -900];
 
             thrust_cons = 0.008;
             air_density = 1.225;
@@ -37,7 +37,7 @@ classdef Drone_Controller < handle
             
             obj.B = zeros(6, 4);
             obj.B(4:6, 1:4) = [0, 0, -0.5/obj.drone.Icy, 0.5/obj.drone.Icy;
-                               0.5/obj.drone.Icx, -0.5/obj.drone.Icx, 0, 0; ...
+                               0.5/obj.drone.Icx, -0.5/obj.drone.Icx, 0, 0;
                                0.01, 0.01, -0.01, -0.01];
 
             obj.C = [1 0 0 0 0 0;
@@ -46,9 +46,35 @@ classdef Drone_Controller < handle
             obj.D = [0 0 0 0;
                      0 0 0 0;
                      0 0 0 0];
+            
+        end
+        
+        function current_state = find_current_state(obj)
+            accel = obj.drone.get_accel();
+            gyro = obj.drone.get_gyro();
+            
+            obj.X(1) = asin(-accel(2)/obj.gravity(3));
+            obj.X(2) = asin(accel(1)/obj.gravity(3));
+            current_state = obj.X;
+
+            disp(-accel(1));
+            disp(-accel(2));
+            disp(accel(3));
+
+        end
+
+        function LQR(obj)
             obj.Q = obj.C'*obj.C;
             obj.R = eye(4, 4);
             obj.P = dare(obj.A', obj.B, obj.Q, obj.R);
+
+            % Direct computation of P using the Riccati equation
+            A_transpose = obj.A';
+            %obj.P = lyap(A_transpose, -obj.Q - obj.B * (obj.R \ obj.B'));
+            
+            % Calculate K
+            obj.K = (obj.R \ obj.B') * obj.P;
+            disp(obj.K);
             
             obj.sys_c = ss(obj.A, obj.B, obj.C, obj.D);
             obj.time_step = 0.1;
@@ -56,15 +82,10 @@ classdef Drone_Controller < handle
 
             obj.Ad = obj.sys_d.A;
             obj.Bd = obj.sys_d.B;
-
-            disp(obj.A);
-            disp(" ");
-            disp(obj.B);
             
             obj.X = obj.A * obj.X + obj.B * obj.thrusts;
-            disp(obj.X);
-
         end
+            
     end
 
 end
