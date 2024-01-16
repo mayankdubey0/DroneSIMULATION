@@ -17,8 +17,8 @@ classdef Drone_Controller < handle
     end
     
     methods
-        function obj = Drone_Controller()
-            obj.drone = Drone();
+        function obj = Drone_Controller(drone_object)
+            obj.drone = drone_object;
             obj.target = [0;0;0;0;0;0]; % [x; y; z; roll; pitch; yaw]
             obj.error = zeros(6, 1);
             
@@ -49,17 +49,19 @@ classdef Drone_Controller < handle
             
         end
         
-        function current_state = find_current_state(obj)
+        function find_current_state(obj)
             accel = obj.drone.get_accel();
             gyro = obj.drone.get_gyro();
+
+
             
             obj.X(1) = asin(-accel(2)/obj.gravity(3));
             obj.X(2) = asin(accel(1)/obj.gravity(3));
-            current_state = obj.X;
-
-            disp(-accel(1));
-            disp(-accel(2));
-            disp(accel(3));
+            
+            disp(gyro(1));
+            disp(gyro(2));
+            disp(gyro(3));
+            disp(obj.X);
 
         end
 
