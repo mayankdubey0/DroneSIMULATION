@@ -15,11 +15,17 @@ classdef Drone < handle
         accelerometer_bias, gyro_bias
         total_mass
         normal_vec
+
+        %display things
+        h1, h2
+        time
     end 
 
     methods
 
         function obj = Drone()
+
+            obj.time = 0;
             % Constructon
             obj.com = [0; 0; 10]; % x, y, z
             obj.angle = [0; 0; 0]; % roll, pitch, yaw a, b c
@@ -63,7 +69,7 @@ classdef Drone < handle
             air_density = 1.225;    % kg/m^3
             diameter = 0.1;
             
-            obj.motor_speeds = [900; 900; -900; -900];% + (randn(4,1))*5;
+            obj.motor_speeds = [1200; 1200; -800; -800];% + (randn(4,1))*5;
             obj.prev_motor_speeds = [0; 0; 0; 0];
              
             obj.motor_Icz = (1/3) * (0.01 + 0.25*obj.motor_mass) * diameter^2/4;
@@ -107,9 +113,9 @@ classdef Drone < handle
 
 
         function speed = get_gyro(obj)
-            gyro_noise = obj.gyro_bias + randn(3, 1)*0.2;
+            gyro_noise = obj.gyro_bias;% + randn(3, 1)*0.2;
             speed = [obj.w_roll, obj.w_pitch, obj.w_yaw];% + gyro_noise;
-            %disp(acceleration);
+            disp(speed);
         end
         % #### END #####
 
@@ -165,14 +171,14 @@ classdef Drone < handle
         function obj = update_position(obj)
             % Update coordinates (you can modify this based on your needs)
             [accel_trans, accel_ang] = obj.calc_accel();
-            disp(accel_trans);
 
             obj.w_roll = obj.w_roll + accel_ang(:, 1)*0.1;
-            %disp(obj.w_roll);
+            disp(obj.get_gyro());
             obj.w_pitch = obj.w_pitch + accel_ang(:, 2)*0.1;
             %disp(obj.w_pitch);
             obj.w_yaw = obj.w_yaw + accel_ang(:, 3)*0.1;
             net_w = obj.w_roll + obj.w_pitch + obj.w_yaw;
+            %disp(net_w);
            
             obj.m1 = obj.rodriguesRot(obj.m1, net_w, 0.1);
             obj.m2 = obj.rodriguesRot(obj.m2, net_w, 0.1);
@@ -203,31 +209,32 @@ classdef Drone < handle
 
         end
 
-
-
-
-        function show_drone(obj)
-           
+        function set_grid(obj)
             figure;
+
+            xlabel('X-axis');
+            ylabel('Y-axis');
+            zlabel('Z-axis');
+            title('Two 3D Line Segments');
             
-            h1 = plot3(obj.x1, obj.y1, obj.z1, 'b-', 'LineWidth', 2);
+            obj.h1 = plot3(obj.x1, obj.y1, obj.z1, 'b-', 'LineWidth', 2);
             hold on;
            
           
             % Plot the second line segment
-            h2 = plot3(obj.x2, obj.y2, obj.z2, 'r-', 'LineWidth', 2);
+            obj.h2 = plot3(obj.x2, obj.y2, obj.z2, 'r-', 'LineWidth', 2);
             hold off;
  
             grid on;
 
             axis([-10, 10, -10, 10, 0, 50]);
+        end
 
-            numSteps = 1;
-            time = 0;
+
+        function show_drone(obj)
 
             % Animation loop
-            for step = 1:numSteps
-                time = time + 1;
+                obj.time = obj.time + 1;
                 %disp(time);
 
                 obj.update_position();
@@ -235,19 +242,14 @@ classdef Drone < handle
                 %disp(obj.com);
                         
                 % Update line plot data
-                set(h1, 'XData', obj.x1, 'YData', obj.y1, 'ZData', obj.z1);
-                set(h2, 'XData', obj.x2, 'YData', obj.y2, 'ZData', obj.z2);
+                set(obj.h1, 'XData', obj.x1, 'YData', obj.y1, 'ZData', obj.z1);
+                set(obj.h2, 'XData', obj.x2, 'YData', obj.y2, 'ZData', obj.z2);
             
                 % Pause to control the animation speed
                 pause(0.1);
                 
                 % Refresh the figure
-                drawnow;
-            end            
-            xlabel('X-axis');
-            ylabel('Y-axis');
-            zlabel('Z-axis');
-            title('Two 3D Line Segments');
+                drawnow;          
         end
 
     end
