@@ -13,6 +13,7 @@ classdef Drone_Controller < handle
         accel_reading, gyro_reading
         thrusts, X, X_dot
         gravity
+        roll, pitch, yaw
 
     end
     
@@ -21,6 +22,11 @@ classdef Drone_Controller < handle
             obj.drone = drone_object;
             obj.target = [0;0;0;0;0;0]; % [x; y; z; roll; pitch; yaw]
             obj.error = zeros(6, 1);
+
+            obj.time_step = 0.1;
+            obj.roll = 0;
+            obj.pitch = 0;
+            obj.yaw = 0;
             
             obj.motor_speeds  = [900; 900; -900; -900];
 
@@ -53,15 +59,17 @@ classdef Drone_Controller < handle
             accel = obj.drone.get_accel();
             gyro = obj.drone.get_gyro();
 
+            obj.roll = obj.roll + obj.time_step * gyro(1);
+            obj.pitch = obj.pitch + obj.pitch * gyro(2);
+            obj.yaw = obj.yaw + obj.time_step * gyro(3);
 
+            ex = [obj.roll, obj.pitch, obj.yaw];
             
             obj.X(1) = asin(-accel(2)/obj.gravity(3));
             obj.X(2) = asin(accel(1)/obj.gravity(3));
             
-            disp(gyro(1));
-            disp(gyro(2));
-            disp(gyro(3));
             disp(obj.X);
+            disp(ex);
 
         end
 
@@ -79,7 +87,6 @@ classdef Drone_Controller < handle
             disp(obj.K);
             
             obj.sys_c = ss(obj.A, obj.B, obj.C, obj.D);
-            obj.time_step = 0.1;
             obj.sys_d = c2d(obj.sys_c, obj.time_step);
 
             obj.Ad = obj.sys_d.A;
