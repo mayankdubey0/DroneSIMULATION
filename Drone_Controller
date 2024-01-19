@@ -23,7 +23,7 @@ classdef Drone_Controller < handle
             obj.target = [0;0;0;0;0;0]; % [x; y; z; roll; pitch; yaw]
             obj.error = zeros(6, 1);
 
-            obj.time_step = 0.1;
+            obj.time_step = 0.01;
             obj.roll = 0;
             obj.pitch = 0;
             obj.yaw = 0;
@@ -55,22 +55,23 @@ classdef Drone_Controller < handle
             
         end
         
-        function find_current_state(obj)
+        function update_current_state(obj)
             accel = obj.drone.get_accel();
             gyro = obj.drone.get_gyro();
 
-            obj.roll = obj.roll + obj.time_step * gyro(1);
-            obj.pitch = obj.pitch + obj.pitch * gyro(2);
-            obj.yaw = obj.yaw + obj.time_step * gyro(3);
-
+            obj.roll = obj.roll - obj.time_step * norm(gyro(:, 1));
+            obj.pitch = obj.pitch - obj.time_step * norm(gyro(:, 2));
+            obj.yaw = obj.yaw - obj.time_step * norm(gyro(:, 3));
+            
             ex = [obj.roll, obj.pitch, obj.yaw];
             
             obj.X(1) = asin(-accel(2)/obj.gravity(3));
             obj.X(2) = asin(accel(1)/obj.gravity(3));
-            
-            disp(obj.X);
-            disp(ex);
 
+            %obj.X(1:3) = obj.X(1:3) * 0.2 + ex' * 0.8;
+            disp(ex);
+            %disp(obj.X);
+ 
         end
 
         function LQR(obj)
