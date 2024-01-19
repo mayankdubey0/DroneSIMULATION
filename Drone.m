@@ -15,6 +15,7 @@ classdef Drone < handle
         accelerometer_bias, gyro_bias
         total_mass
         normal_vec
+        time_step
 
         %display things
         h1, h2
@@ -26,6 +27,7 @@ classdef Drone < handle
         function obj = Drone()
 
             obj.time = 0;
+            obj.time_step = 0.01;
             % Constructon
             obj.com = [0; 0; 10]; % x, y, z
             obj.angle = [0; 0; 0]; % roll, pitch, yaw a, b c
@@ -115,7 +117,7 @@ classdef Drone < handle
         function speed = get_gyro(obj)
             gyro_noise = obj.gyro_bias;% + randn(3, 1)*0.2;
             speed = [obj.w_roll, obj.w_pitch, obj.w_yaw];% + gyro_noise;
-            disp(speed);
+            %disp(speed);
         end
         % #### END #####
 
@@ -140,14 +142,14 @@ classdef Drone < handle
             obj.net_moments(:, 2) = (cross(obj.m3, obj.thrusts(3)*normal') + cross(obj.m4, obj.thrusts(4)*normal'));
             
             obj.net_moments(:, 3) = -0.01*[1 1 -1 -1]*obj.thrusts*normal;
+            %disp(obj.thrusts);
             % obj.prev_motor_speeds = obj.motor_speeds;
             % obj.net_moments(:, 3) = ones(1, 4) * (obj.motor_speeds * obj.motor_Icz) * normal;
-            % disp(obj.net_moments(:, 3));
+           
 
             accel_angular = [obj.net_moments(:, 1)/obj.Icx, obj.net_moments(:, 2)/obj.Icy, obj.net_moments(:, 3)/obj.Icz];
             accel_t = accel_translational;
             accel_a = accel_angular;
-
         end
 
 
@@ -172,27 +174,24 @@ classdef Drone < handle
             % Update coordinates (you can modify this based on your needs)
             [accel_trans, accel_ang] = obj.calc_accel();
 
-            obj.w_roll = obj.w_roll + accel_ang(:, 1)*0.1;
-            disp(obj.get_gyro());
-            obj.w_pitch = obj.w_pitch + accel_ang(:, 2)*0.1;
-            %disp(obj.w_pitch);
-            obj.w_yaw = obj.w_yaw + accel_ang(:, 3)*0.1;
+            obj.w_roll = obj.w_roll + accel_ang(:, 1)*obj.time_step;
+            obj.w_pitch = obj.w_pitch + accel_ang(:, 2)*obj.time_step;
+            obj.w_yaw = obj.w_yaw + accel_ang(:, 3)*obj.time_step;
             net_w = obj.w_roll + obj.w_pitch + obj.w_yaw;
-            %disp(net_w);
            
-            obj.m1 = obj.rodriguesRot(obj.m1, net_w, 0.1);
-            obj.m2 = obj.rodriguesRot(obj.m2, net_w, 0.1);
-            obj.m3 = obj.rodriguesRot(obj.m3, net_w, 0.1);
-            obj.m4 = obj.rodriguesRot(obj.m4, net_w, 0.1);
+            obj.m1 = obj.rodriguesRot(obj.m1, net_w, obj.time_step);
+            obj.m2 = obj.rodriguesRot(obj.m2, net_w, obj.time_step);
+            obj.m3 = obj.rodriguesRot(obj.m3, net_w, obj.time_step);
+            obj.m4 = obj.rodriguesRot(obj.m4, net_w, obj.time_step);
 
-            obj.v_x = obj.v_x + accel_trans(1)*0.1;
-            obj.v_y = obj.v_y + accel_trans(2)*0.1;
-            obj.v_z = obj.v_z + accel_trans(3)*0.1;
+            obj.v_x = obj.v_x + accel_trans(1)*obj.time_step;
+            obj.v_y = obj.v_y + accel_trans(2)*obj.time_step;
+            obj.v_z = obj.v_z + accel_trans(3)*obj.time_step;
 
             % set new COM
-            del_x = obj.v_x * 0.1;
-            del_y = obj.v_y * 0.1;
-            del_z = obj.v_z * 0.1;
+            del_x = obj.v_x * obj.time_step;
+            del_y = obj.v_y * obj.time_step;
+            del_z = obj.v_z * obj.time_step;
             obj.com = [obj.com(1) + del_x; obj.com(2) + del_y; obj.com(3) + del_z];
             if (obj.com(3) < 0) 
                 obj.com = [0;0;0];
@@ -227,7 +226,7 @@ classdef Drone < handle
  
             grid on;
 
-            axis([-10, 10, -10, 10, 0, 50]);
+            axis([-10, 10, -10, 10, 0, 20]);
         end
 
 
@@ -246,7 +245,7 @@ classdef Drone < handle
                 set(obj.h2, 'XData', obj.x2, 'YData', obj.y2, 'ZData', obj.z2);
             
                 % Pause to control the animation speed
-                pause(0.1);
+                pause(obj.time_step);
                 
                 % Refresh the figure
                 drawnow;          
