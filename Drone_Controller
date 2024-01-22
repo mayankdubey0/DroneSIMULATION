@@ -11,7 +11,7 @@ classdef Drone_Controller < handle
         position, angles
         motor_speeds
         accel_reading, gyro_reading
-        thrusts, X, X_dot
+        thrusts, X, X_dot, X_pred
         gravity
         roll, pitch, yaw
 
@@ -28,13 +28,14 @@ classdef Drone_Controller < handle
             obj.pitch = 0;
             obj.yaw = 0;
             
-            obj.motor_speeds  = [900; 900; -900; -900];
+            obj.motor_speeds  = [1200; 1200; -800; -800];
 
             thrust_cons = 0.008;
             air_density = 1.225;
             diameter = 0.1;
             obj.thrusts = thrust_cons * air_density * (diameter^4) * [obj.motor_speeds(1)^2; obj.motor_speeds(2)^2; obj.motor_speeds(3)^2; obj.motor_speeds(4)^2];
             obj.X = zeros(6, 1);
+            obj.X_pred = obj.X;
             obj.X_dot = zeros(6, 1);
             obj.gravity = [0; 0; -9.81];
 
@@ -48,7 +49,7 @@ classdef Drone_Controller < handle
 
             obj.C = [1 0 0 0 0 0;
                      0 1 0 0 0 0;
-                     0 0 1 0 0 0;];
+                     0 0 1 0 0 0];
             obj.D = [0 0 0 0;
                      0 0 0 0;
                      0 0 0 0];
@@ -67,33 +68,33 @@ classdef Drone_Controller < handle
             
             obj.X(1) = asin(-accel(2)/obj.gravity(3));
             obj.X(2) = asin(accel(1)/obj.gravity(3));
+            obj.X(3) = ex(3);
 
-            %obj.X(1:3) = obj.X(1:3) * 0.2 + ex' * 0.8;
-            disp(ex);
-            %disp(obj.X);
+            obj.X(1:2) = obj.X(1:2) * 0.2 + ex(1:2)' * 0.8;
+            disp(obj.X);
  
         end
 
         function LQR(obj)
+            obj.error = obj.target - obj.X;
             obj.Q = obj.C'*obj.C;
             obj.R = eye(4, 4);
             obj.P = dare(obj.A', obj.B, obj.Q, obj.R);
-
+               
             % Direct computation of P using the Riccati equation
-            A_transpose = obj.A';
-            %obj.P = lyap(A_transpose, -obj.Q - obj.B * (obj.R \ obj.B'));
             
             % Calculate K
             obj.K = (obj.R \ obj.B') * obj.P;
-            disp(obj.K);
-            
+
             obj.sys_c = ss(obj.A, obj.B, obj.C, obj.D);
             obj.sys_d = c2d(obj.sys_c, obj.time_step);
 
             obj.Ad = obj.sys_d.A;
             obj.Bd = obj.sys_d.B;
             
-            obj.X = obj.A * obj.X + obj.B * obj.thrusts;
+            obj.X_pred = obj.Ad * obj.X_pred + obj.Bd * obj.thrusts;
+
+            disp(obj.X_pred);
         end
             
     end
