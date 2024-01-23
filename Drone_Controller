@@ -28,7 +28,7 @@ classdef Drone_Controller < handle
             obj.pitch = 0;
             obj.yaw = 0;
             
-            obj.motor_speeds  = [1200; 1200; -800; -800];
+            obj.motor_speeds  = [1100; 1100; -1300; -854.4];
 
             thrust_cons = 0.008;
             air_density = 1.225;
@@ -45,7 +45,7 @@ classdef Drone_Controller < handle
             obj.B = zeros(6, 4);
             obj.B(4:6, 1:4) = [0, 0, -0.5/obj.drone.Icy, 0.5/obj.drone.Icy;
                                0.5/obj.drone.Icx, -0.5/obj.drone.Icx, 0, 0;
-                               0.01, 0.01, -0.01, -0.01];
+                               -0.01/obj.drone.Icz, -0.01/obj.drone.Icz, 0.01/obj.drone.Icz, 0.01/obj.drone.Icz];
 
             obj.C = [1 0 0 0 0 0;
                      0 1 0 0 0 0;
