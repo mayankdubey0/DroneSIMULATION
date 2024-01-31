@@ -20,6 +20,7 @@ classdef Drone < handle
         %display things
         h1, h2
         time
+        thrust_cons, air_density, diameter
     end 
 
     methods
@@ -29,8 +30,8 @@ classdef Drone < handle
             obj.time = 0;
             obj.time_step = 0.01;
             % Constructon
-            obj.com = [0; 0; 10]; % x, y, z
-            obj.angle = [0; 0; 0]; % roll, pitch, yaw a, b c
+            obj.com = [0; 0; 5]; % x, y, z
+            obj.angle = [0; 0.7; 0]; % roll, pitch, yaw a, b c
             obj.normal_vec = [0; 0; 1];
 
             obj.v_x = 0;
@@ -67,18 +68,19 @@ classdef Drone < handle
 
             %thrust equation: 
             % Thrust = thrust_cons * density * ang_speed^2 * diameter^4
-            thrust_cons = 0.008;
-            air_density = 1.225;    % kg/m^3
-            diameter = 0.1;
+            obj.thrust_cons = 0.008;
+            obj.air_density = 1.225;    % kg/m^3
+            obj.diameter = 0.1;
             
-            obj.motor_speeds = [1200; 1200; -800; -800];% + (randn(4,1))*5;
+            % obj.motor_speeds = [0, 0, 0, 0];
+            obj.motor_speeds = [0; 0; 0; 0];% + (randn(4,1))*5;
             obj.prev_motor_speeds = [0; 0; 0; 0];
              
-            obj.motor_Icz = (1/3) * (0.01 + 0.25*obj.motor_mass) * diameter^2/4;
+            obj.motor_Icz = (1/3) * (0.01 + 0.25*obj.motor_mass) * obj.diameter^2/4;
             obj.total_mass = obj.motor_mass * 4 + obj.center_mass;
             
             
-            obj.thrusts = thrust_cons * air_density * (diameter^4) * [obj.motor_speeds(1)^2; obj.motor_speeds(2)^2; obj.motor_speeds(3)^2; obj.motor_speeds(4)^2];
+            obj.thrusts = obj.thrust_cons * obj.air_density * (obj.diameter^4) * [obj.motor_speeds(1)^2; obj.motor_speeds(2)^2; obj.motor_speeds(3)^2; obj.motor_speeds(4)^2];
             obj.net_forces = zeros(3, 1);
 
             obj.Icx = (obj.motor_mass*obj.m1(2)^2)*2.0;
@@ -93,10 +95,10 @@ classdef Drone < handle
         end
     
         % #### MAIN FUNCTIONS FOR CONTROLLER ####
-        function obj = set_motor_speed(obj, motor, speed)
+        function obj = set_motor_speed(obj, speed)
             obj.prev_motor_speeds = obj.motor_speeds; % adding actuator noise (gaussian distribution with mean 
-            obj.motor_speeds(motor) = speed + (randn)*5;
-            obj.thrusts = thrust_cons * air_density * (diameter^4) * [obj.motor_speeds(1)^2; obj.motor_speeds(2)^2; obj.motor_speeds(3)^2; obj.motor_speeds(4)^2];
+            obj.motor_speeds = speed + (randn)*5;
+            obj.thrusts = obj.thrust_cons * obj.air_density * (obj.diameter^4) * [obj.motor_speeds(1)^2; obj.motor_speeds(2)^2; obj.motor_speeds(3)^2; obj.motor_speeds(4)^2];
         end
         
 
@@ -135,6 +137,7 @@ classdef Drone < handle
             obj.net_forces = gravitational_force + net_thrust;% + (randn(3, 1)*0.1);
 
             accel_translational = obj.net_forces/(obj.center_mass + obj.motor_mass*4);
+            accel_translational = [0;0;0];
             %disp(accel_translational);
 
             %find rotational acceleration
@@ -226,7 +229,7 @@ classdef Drone < handle
  
             grid on;
 
-            axis([-10, 10, -10, 10, 0, 20]);
+            axis([-5, 5, -5, 5, 0, 10]);
         end
 
 
